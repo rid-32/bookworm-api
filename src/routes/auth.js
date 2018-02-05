@@ -1,8 +1,13 @@
 // Маршрут /api/auth
 
 import { Router } from 'express';
+import jwt from 'jsonwebtoken';
+
 // Модель коллекции users
 import User from '../models/User';
+
+// Функция отправки email для изменения пароля
+import { sendResetPasswordEmail } from '../mailer';
 
 let router = Router();
 
@@ -32,6 +37,50 @@ router.post('/confirmation', (req, res) => {
   ).then(user =>
     user ? res.json({ user: user.toAuthJSON() }) : res.status(400).json({})
   );
+});
+
+// Маршрут отправки email для изменения пароля
+// Если указанный email существует и он подтвержден, то сервер отправляет на него письмо
+// со ссылкой с токеном для изменения пароля
+router.post('/reset_password_request', (req, res) => {
+  User.findOne({ email: req.body.email }).then(user => {
+    if (user) {
+      sendResetPasswordEmail(user);
+      res.json({});
+    } else {
+      res.status(400).json({ errors: { global: "There is no user with such email" } });
+    }
+  })
+});
+
+// Маршрут подтверждения валидности токена для отображения формы изменения пароля у клиента
+router.post('/validate_token', (req, res) => {
+  jwt.verify(req.body.token, process.env.JWT_SECRET, err => {
+    if (err) {
+      res.status(401).json({});
+    } else {
+      res.json({});
+    }
+  })
+});
+
+// Маршрут изменения пароля. _id пользователя извлекается из полученного от клиента токена
+router.post('/reset_password', (req, res) => {
+  const { password, token } = req.body.data;
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      res.status(401).json({ errors: { global: "Invalid token" } });
+    } else {
+      User.findOne({ _id: decoded._id }).then(user => {
+        if (user) {
+          user.setPassword(password);
+          user.save().then(() => res.json({}));
+        } else {
+          res.status(404).json({ errors: { global: "Invalid token" } });
+        }
+      });
+    }
+  });
 });
 
 export default router;

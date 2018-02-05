@@ -1,3 +1,6 @@
+// Модуль отправки почты
+// В этом же модуле осуществляется настройка отправщика почты
+
 import nodemailer from 'nodemailer';
 
 const from = '"Bookworm" <info@bookworm.com>';
@@ -23,6 +26,22 @@ export function sendConfirmationEmail(user) {
       Welcome to Bookworm. Please, confirm your email.
 
       ${user.generateConfirmationUrl()}
+    `
+  }
+
+  transport.sendMail(email);
+}
+
+export function sendResetPasswordEmail(user) {
+  const transport = setup();
+  const email = {
+    from,
+    to: user.email,
+    subject: "Reset Password",
+    text: `
+      To reset password follow this link.
+
+      ${user.generateResetPasswordLink()}
     `
   }
 
