@@ -11,6 +11,7 @@ import Promise from 'bluebird';
 // Routes
 import auth from './routes/auth';
 import users from './routes/users';
+import books from './routes/books';
 
 // Парсим файл .env и заполняем process.evn
 dotenv.config();
@@ -30,6 +31,7 @@ app.use(bodyParser.json());
 // Пользовательские маршруты
 app.use('/api/auth', auth);
 app.use('/api/users', users);
+app.use('/api/books', books);
 
 app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
